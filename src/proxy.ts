@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createProxyClient } from '@/lib/supabase/middleware';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { client: supabase, getResponse } = createProxyClient(request);
 
   // Refresh the session — MUST happen before any redirect so cookies stay fresh
