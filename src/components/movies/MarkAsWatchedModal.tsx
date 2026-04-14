@@ -95,7 +95,7 @@ export function MarkAsWatchedModal({
             Avaliação
             <span className="ml-1 normal-case font-normal text-[#9CA3AF]">(opcional)</span>
           </span>
-          <StarRating value={score} onChange={setScore} size={28} />
+          <StarRating rating={score} onChange={setScore} size="lg" />
         </div>
 
         {/* Comment (optional) */}

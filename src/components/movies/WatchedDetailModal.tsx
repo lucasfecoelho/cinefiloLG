@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Film, Star } from 'lucide-react';
+import { Film } from 'lucide-react';
 
 import { Modal }        from '@/components/ui/Modal';
 import { Button }       from '@/components/ui/Button';
@@ -44,14 +44,6 @@ function dbToDisplay(dbScore: number): number {
   return dbScore / 2;
 }
 
-function calcAvg(profiles: Profile[], ratings: MovieWithRatings['ratings']): number {
-  const sum = profiles.reduce((acc, p) => {
-    const r = ratings.find((rt) => rt.user_id === p.id);
-    return acc + (r ? dbToDisplay(r.score) : 0);
-  }, 0);
-  return profiles.length > 0 ? sum / profiles.length : 0;
-}
-
 // ─── Rating row ───────────────────────────────────────────────────────────────
 
 interface RatingRowProps {
@@ -77,10 +69,9 @@ function RatingRow({
       </span>
 
       <StarRating
-        value={editScore}
+        rating={editScore}
         onChange={isOwn ? onScoreChange : undefined}
-        readonly={!isOwn}
-        size={26}
+        size="lg"
       />
 
       {/* Comment — editable for own, display-only for partner */}
@@ -170,9 +161,6 @@ export function WatchedDetailModal({
   const partnerRating  = movie?.ratings.find((r) => r.user_id !== currentUserId);
   const partnerScore   = partnerRating ? dbToDisplay(partnerRating.score) : 0;
   const partnerComment = partnerRating?.comment ?? '';
-
-  // ── Average ───────────────────────────────────────────────────────────────
-  const average = movie ? calcAvg(profiles, movie.ratings) : 0;
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -310,16 +298,10 @@ export function WatchedDetailModal({
               </div>
 
               {/* ── Average ─────────────────────────────────────────────── */}
-              {(movie?.ratings.length ?? 0) > 0 && (
-                <div className="flex items-center gap-1.5 py-1">
-                  <Star size={14} fill="#FACC15" stroke="#FACC15" aria-hidden="true" />
-                  <span className="text-sm text-[#9CA3AF]">
-                    Média:{' '}
-                    <span className="text-[#F5F5F5] font-semibold">
-                      {average.toFixed(1)}
-                    </span>
-                    <span className="text-[#6B7280]"> / 5</span>
-                  </span>
+              {displayed?.avg_rating != null && (
+                <div className="flex items-center gap-2 py-1">
+                  <span className="text-sm text-[#9CA3AF]">Média</span>
+                  <StarRating rating={displayed.avg_rating} mode="display" size="sm" />
                 </div>
               )}
 

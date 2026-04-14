@@ -37,11 +37,15 @@ export interface Movie {
 
 export interface Rating {
   id: string;
-  movie_id: string;
+  movie_id: string; // UUID — references movies.id
   user_id: string;
-  score: number; // 0–5, supports half-stars
+  // DB stores `rating` DECIMAL(2,1) in the 0.5–5.0 range.
+  // Hooks expose it here as `score = rating * 2` (0–10 integer scale)
+  // so that UI helpers using `score / 2` continue to work unchanged.
+  score: number;
   comment: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Notification {
@@ -92,8 +96,12 @@ export interface TMDBGenre {
 // ─── UI helpers ───────────────────────────────────────────────────────────────
 
 export interface MovieWithRatings extends Movie {
-  ratings: Rating[];
-  my_rating?: Rating;
+  ratings:       Rating[];
+  my_rating?:    Rating;
+  /** Average of all rated users, rounded to nearest 0.5. null if nobody rated. */
+  avg_rating:    number | null;
+  /** How many users have submitted a rating (0, 1, or 2 for a couple). */
+  total_ratings: number;
 }
 
 export interface NotificationWithDetails extends Notification {

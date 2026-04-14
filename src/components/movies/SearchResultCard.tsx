@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Bookmark, Eye, Film } from 'lucide-react';
@@ -12,36 +13,43 @@ import { genreNames, posterUrl } from '@/lib/tmdb';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface SearchResultCardProps {
-  movie: TMDBMovie;
+  movie:           TMDBMovie;
   /** null = not yet in the database */
-  existingStatus: MovieStatus | null;
+  existingStatus:  MovieStatus | null;
   onAddToWatch:    () => void;
   onAddToWatched:  () => void;
   isAddingWatch:   boolean;
   isAddingWatched: boolean;
   /** Used to stagger entrance animation. */
-  index: number;
+  index:           number;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-/** Transparent 1×1 PNG — next/image blur placeholder. The dark container bg
- *  shows through, giving the "gray placeholder" effect while the poster loads. */
-const BLUR_DATA_URL =
+/** Transparent 1 × 1 PNG — shows the dark container bg while the poster loads. */
+const BLUR_1X1 =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
 const STATUS_BADGE: Record<MovieStatus, { label: string; className: string }> = {
   to_watch: {
-    label: 'Na lista',
+    label:     'Na lista',
     className: 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/30',
   },
   watched: {
-    label: 'Assistido',
+    label:     'Assistido',
     className: 'bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/30',
   },
 };
 
-const MAX_GENRES = 3;
+/**
+ * Characters threshold above which we assume the synopsis needs clamping.
+ * Used to set the initial `clampNeeded` state before layout is measured,
+ * preventing a visible flash-and-collapse for long texts.
+ */
+const SYNOPSIS_CLAMP_THRESHOLD = 150;
+
+/** Collapsed height: 3 lines of text-sm (14 px) at leading-relaxed (1.625). */
+const COLLAPSED_H = 68;
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
@@ -54,118 +62,141 @@ export function SearchResultCard({
   isAddingWatched,
   index,
 }: SearchResultCardProps) {
-  const poster = posterUrl(movie.poster_path, 'w185');
-  const year   = movie.release_date ? movie.release_date.slice(0, 4) : null;
-  const genres = genreNames(movie.genre_ids).slice(0, MAX_GENRES);
+  const src      = posterUrl(movie.poster_path, 'w342');
+  const year     = movie.release_date ? movie.release_date.slice(0, 4) : null;
+  const genres   = genreNames(movie.genre_ids).slice(0, 3).join(', ');
+  const meta     = [year, genres].filter(Boolean).join(' · ');
+  const synopsis = movie.overview || null;
   const isExisting = existingStatus !== null;
 
+  // ── Synopsis expand ───────────────────────────────────────────────────────
+  const synopsisRef  = useRef<HTMLParagraphElement>(null);
+  const [clampNeeded, setClampNeeded] = useState(
+    (synopsis?.length ?? 0) > SYNOPSIS_CLAMP_THRESHOLD,
+  );
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const el = synopsisRef.current;
+    if (el) setClampNeeded(el.scrollHeight > el.clientHeight + 1);
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <motion.article
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
         duration: 0.28,
-        ease: [0.2, 0, 0, 1],
-        delay: Math.min(index * 0.055, 0.35),
+        ease:     [0.2, 0, 0, 1],
+        delay:    Math.min(index * 0.055, 0.35),
       }}
-      className={[
-        'flex rounded-2xl overflow-hidden',
-        'bg-[#1A1A1A] dark:bg-[#1A1A1A]',
-        'border border-[#2A2A2A]',
-      ].join(' ')}
+      className="flex flex-col rounded-2xl overflow-hidden bg-[#1A1A1A] border border-[#2A2A2A]"
     >
-      {/* ── Poster ──────────────────────────────────────────────────────────── */}
-      <div className="relative w-[76px] shrink-0 self-stretch bg-[#2A2A2A]">
-        {poster ? (
-          <Image
-            src={poster}
-            alt={`Poster de ${movie.title}`}
-            fill
-            sizes="76px"
-            className="object-cover"
-            placeholder="blur"
-            blurDataURL={BLUR_DATA_URL}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Film size={22} className="text-[#3F3F46]" aria-hidden="true" />
-          </div>
-        )}
-      </div>
+      {/* ── Poster + info ───────────────────────────────────────────────────── */}
+      <div className="flex gap-3 p-3">
 
-      {/* ── Info ────────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 min-w-0 px-3 py-3 gap-2">
-        {/* Title row */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-[#F5F5F5] leading-snug line-clamp-2">
-              {movie.title}
-            </h3>
-            {year && (
-              <span className="text-xs text-[#6B7280] mt-0.5 block">{year}</span>
-            )}
-          </div>
-          {/* Status badge */}
-          {isExisting && (
-            <span
-              className={[
-                'shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full',
-                STATUS_BADGE[existingStatus].className,
-              ].join(' ')}
-            >
-              {STATUS_BADGE[existingStatus].label}
-            </span>
+        {/* Poster — 2:3 aspect, responsive width */}
+        <div className="relative w-27.5 sm:w-35 aspect-2/3 shrink-0 rounded-lg overflow-hidden bg-[#2A2A2A]">
+          {src ? (
+            <Image
+              src={src}
+              alt={`Poster de ${movie.title}`}
+              fill
+              sizes="(min-width: 640px) 140px, 110px"
+              className="object-cover"
+              placeholder="blur"
+              blurDataURL={BLUR_1X1}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Film size={28} className="text-[#3F3F46]" aria-hidden="true" />
+            </div>
           )}
         </div>
 
-        {/* Synopsis */}
-        {movie.overview ? (
-          <p className="text-xs text-[#9CA3AF] leading-relaxed line-clamp-2">
-            {movie.overview}
-          </p>
-        ) : null}
+        {/* Info column */}
+        <div className="flex flex-col flex-1 min-w-0 gap-1 py-0.5">
 
-        {/* Genre chips */}
-        {genres.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {genres.map((g) => (
+          {/* Title + status badge */}
+          <div className="flex items-start gap-2">
+            <h3 className="text-base font-semibold text-[#F5F5F5] leading-snug line-clamp-3 flex-1 min-w-0">
+              {movie.title}
+            </h3>
+            {isExisting && (
               <span
-                key={g}
-                className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#2A2A2A] text-[#9CA3AF]"
+                className={[
+                  'shrink-0 text-[10px] font-semibold px-2 py-0.5',
+                  'rounded-full whitespace-nowrap mt-0.5',
+                  STATUS_BADGE[existingStatus].className,
+                ].join(' ')}
               >
-                {g}
+                {STATUS_BADGE[existingStatus].label}
               </span>
-            ))}
+            )}
           </div>
-        )}
 
-        {/* Action buttons */}
-        <div className="flex gap-2 mt-auto pt-1">
-          <Button
-            variant="success"
-            size="sm"
-            onClick={onAddToWatch}
-            loading={isAddingWatch}
-            disabled={isExisting || isAddingWatch}
-            className="flex-1 text-xs"
-            aria-label="Adicionar à lista Para Assistir"
-          >
-            <Bookmark size={13} aria-hidden="true" />
-            Para Assistir
-          </Button>
-          <Button
-            variant="info"
-            size="sm"
-            onClick={onAddToWatched}
-            loading={isAddingWatched}
-            disabled={isExisting || isAddingWatched}
-            className="flex-1 text-xs"
-            aria-label="Marcar como assistido"
-          >
-            <Eye size={13} aria-hidden="true" />
-            Assistido
-          </Button>
+          {/* Year · genres */}
+          {meta && (
+            <p className="text-sm text-[#6B7280] leading-snug">{meta}</p>
+          )}
         </div>
+      </div>
+
+      {/* ── Synopsis ────────────────────────────────────────────────────────── */}
+      {synopsis && (
+        <div className="px-3 pb-1">
+          <motion.div
+            initial={false}
+            animate={{ height: !clampNeeded || expanded ? 'auto' : COLLAPSED_H }}
+            transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+            className="overflow-hidden"
+          >
+            <p
+              ref={synopsisRef}
+              className="text-sm text-[#9CA3AF] leading-relaxed"
+            >
+              {synopsis}
+            </p>
+          </motion.div>
+          {clampNeeded && (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="text-xs text-[#6B7280] hover:text-[#9CA3AF] mt-0.5 transition-colors duration-150"
+            >
+              {expanded ? 'ver menos ↑' : 'ver mais ↓'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Action buttons ──────────────────────────────────────────────────── */}
+      <div className="flex gap-2 p-3 pt-2">
+        <Button
+          variant="success"
+          size="sm"
+          onClick={onAddToWatch}
+          loading={isAddingWatch}
+          disabled={isExisting || isAddingWatch}
+          className="flex-1 text-xs"
+          aria-label="Adicionar à lista Para Assistir"
+        >
+          <Bookmark size={13} aria-hidden="true" />
+          Para Assistir
+        </Button>
+        <Button
+          variant="info"
+          size="sm"
+          onClick={onAddToWatched}
+          loading={isAddingWatched}
+          disabled={isExisting || isAddingWatched}
+          className="flex-1 text-xs"
+          aria-label="Marcar como assistido"
+        >
+          <Eye size={13} aria-hidden="true" />
+          Assistido
+        </Button>
       </div>
     </motion.article>
   );
@@ -176,26 +207,31 @@ export function SearchResultCard({
 export function SearchResultCardSkeleton() {
   return (
     <div
-      className="flex rounded-2xl overflow-hidden bg-[#1A1A1A] border border-[#2A2A2A]"
+      className="flex flex-col rounded-2xl overflow-hidden bg-[#1A1A1A] border border-[#2A2A2A]"
       aria-hidden="true"
     >
-      {/* Poster placeholder */}
-      <Skeleton variant="card" width="76px" height="140px" className="rounded-none shrink-0" />
-
-      {/* Info placeholder */}
-      <div className="flex flex-col flex-1 min-w-0 px-3 py-3 gap-2.5">
-        <Skeleton variant="line" width="75%" height="14px" />
-        <Skeleton variant="line" width="30%" height="11px" />
-        <Skeleton variant="line" width="100%" height="11px" />
-        <Skeleton variant="line" width="85%"  height="11px" />
-        <div className="flex gap-1.5 mt-1">
-          <Skeleton variant="line" width="50px" height="11px" />
-          <Skeleton variant="line" width="44px" height="11px" />
+      {/* Top row */}
+      <div className="flex gap-3 p-3">
+        <Skeleton
+          variant="card"
+          className="w-27.5 sm:w-35 aspect-2/3 rounded-lg shrink-0"
+        />
+        <div className="flex flex-col flex-1 gap-2 py-1">
+          <Skeleton variant="line" width="85%" height="16px" />
+          <Skeleton variant="line" width="55%" height="14px" />
+          <Skeleton variant="line" width="40%" height="12px" />
         </div>
-        <div className="flex gap-2 mt-auto pt-1">
-          <Skeleton variant="card" height="36px" className="flex-1 rounded-xl" />
-          <Skeleton variant="card" height="36px" className="flex-1 rounded-xl" />
-        </div>
+      </div>
+      {/* Synopsis */}
+      <div className="px-3 pb-1 flex flex-col gap-1.5">
+        <Skeleton variant="line" width="100%" height="12px" />
+        <Skeleton variant="line" width="90%"  height="12px" />
+        <Skeleton variant="line" width="70%"  height="12px" />
+      </div>
+      {/* Buttons */}
+      <div className="flex gap-2 p-3 pt-2">
+        <Skeleton variant="card" height="36px" className="flex-1 rounded-xl" />
+        <Skeleton variant="card" height="36px" className="flex-1 rounded-xl" />
       </div>
     </div>
   );

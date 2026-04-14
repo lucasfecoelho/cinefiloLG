@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
-import { Skeleton } from '@/components/ui/Skeleton';
-import type { MovieWithRatings, Profile, Rating } from '@/types';
+import { Film } from 'lucide-react';
+
+import { StarRating } from '@/components/ui/StarRating';
+import { Skeleton }   from '@/components/ui/Skeleton';
+import type { MovieWithRatings, Profile } from '@/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +18,14 @@ export interface WatchedCardProps {
   onClick:  () => void;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const BLUR_1X1 =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+const SYNOPSIS_CLAMP_THRESHOLD = 150;
+const COLLAPSED_H = 68;
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** "YYYY-MM-DD" → "DD/MM/AAAA" */
@@ -23,25 +35,28 @@ function fmtDate(iso: string | null): string {
   return `${d}/${m}/${y}`;
 }
 
-/** Returns Unicode star string for a DB score (0-10). */
-function starsText(dbScore: number): string {
-  const display = dbScore / 2; // DB 0-10 → display 0-5
-  const filled  = Math.min(5, Math.round(display));
-  return '★'.repeat(filled) + '☆'.repeat(5 - filled);
-}
-
-/** Average of all scores using profiles.length as denominator. */
-function calcAverage(ratings: Rating[], profileCount: number): number | null {
-  if (ratings.length === 0 || profileCount === 0) return null;
-  const sum = ratings.reduce((s, r) => s + r.score / 2, 0);
-  return sum / profileCount;
-}
-
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 export function WatchedCard({ movie, profiles, index, onClick }: WatchedCardProps) {
-  const average = calcAverage(movie.ratings, profiles.length);
+  const genres   = (movie.genres ?? []).slice(0, 3).join(', ');
+  const meta     = [movie.year, genres].filter(Boolean).join(' · ');
+  const synopsis = movie.synopsis;
 
+  // ── Synopsis expand ───────────────────────────────────────────────────────
+  const synopsisRef  = useRef<HTMLParagraphElement>(null);
+  const [clampNeeded, setClampNeeded] = useState(
+    (synopsis?.length ?? 0) > SYNOPSIS_CLAMP_THRESHOLD,
+  );
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const el = synopsisRef.current;
+    if (el) setClampNeeded(el.scrollHeight > el.clientHeight + 1);
+  }, []);
+
+  void profiles; // profiles kept in props for potential future per-person display
+
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <motion.button
       type="button"
@@ -52,81 +67,97 @@ export function WatchedCard({ movie, profiles, index, onClick }: WatchedCardProp
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.18 } }}
       transition={{
         duration: 0.26,
-        ease: [0.2, 0, 0, 1],
-        delay: Math.min(index * 0.045, 0.3),
+        ease:     [0.2, 0, 0, 1],
+        delay:    Math.min(index * 0.06, 0.3),
       }}
       whileTap={{ scale: 0.97 }}
       className={[
-        'w-full text-left',
-        'flex flex-col gap-2 px-4 py-3.5',
-        'bg-[#1A1A1A] rounded-2xl',
+        'w-full text-left flex flex-col',
+        'bg-[#1A1A1A] rounded-2xl overflow-hidden',
         'border border-[#2A2A2A]',
-        'active:bg-[#222222]',
-        'transition-colors duration-100',
+        'active:bg-[#1E1E1E] transition-colors duration-100',
       ].join(' ')}
       aria-label={`Ver detalhes de ${movie.title}`}
     >
-      {/* ── Row 1: title + date ────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-[#F5F5F5] leading-snug flex-1 min-w-0 truncate">
-          {movie.title}
-        </p>
-        <span className="text-xs text-[#6B7280] shrink-0 mt-0.5">
-          {fmtDate(movie.watched_date)}
-        </span>
+      {/* ── Poster + info ───────────────────────────────────────────────────── */}
+      <div className="flex gap-3 p-3">
+
+        {/* Poster */}
+        <div className="relative w-27.5 sm:w-35 aspect-2/3 shrink-0 rounded-lg overflow-hidden bg-[#2A2A2A]">
+          {movie.poster_url ? (
+            <Image
+              src={movie.poster_url}
+              alt={`Poster de ${movie.title}`}
+              fill
+              sizes="(min-width: 640px) 140px, 110px"
+              className="object-cover"
+              placeholder="blur"
+              blurDataURL={BLUR_1X1}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Film size={28} className="text-[#3F3F46]" aria-hidden="true" />
+            </div>
+          )}
+        </div>
+
+        {/* Info column */}
+        <div className="flex flex-col flex-1 min-w-0 gap-1 py-0.5">
+
+          {/* Title + average stars */}
+          <div className="flex items-start gap-2">
+            <h3 className="text-lg font-semibold text-[#F5F5F5] leading-snug line-clamp-3 flex-1 min-w-0">
+              {movie.title}
+            </h3>
+            {movie.avg_rating !== null && movie.total_ratings > 0 && (
+              <div className="shrink-0 mt-1">
+                <StarRating rating={movie.avg_rating} mode="display" size="sm" />
+              </div>
+            )}
+          </div>
+
+          {/* Year · genres */}
+          {meta && (
+            <p className="text-sm text-[#6B7280] leading-snug">{meta}</p>
+          )}
+
+          {/* Watched date — pushed to bottom */}
+          {movie.watched_date && (
+            <p className="text-xs text-[#4B5563] mt-auto pt-1">
+              {fmtDate(movie.watched_date)}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* ── Row 2: year + genres ───────────────────────────────────────────── */}
-      {(movie.year || movie.genres?.length > 0) && (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {movie.year && (
-            <span className="text-xs text-[#6B7280]">{movie.year}</span>
+      {/* ── Synopsis ────────────────────────────────────────────────────────── */}
+      {synopsis && (
+        <div className="px-3 pb-3">
+          <motion.div
+            initial={false}
+            animate={{ height: !clampNeeded || expanded ? 'auto' : COLLAPSED_H }}
+            transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+            className="overflow-hidden"
+          >
+            <p
+              ref={synopsisRef}
+              className="text-sm text-[#9CA3AF] leading-relaxed text-left"
+            >
+              {synopsis}
+            </p>
+          </motion.div>
+          {clampNeeded && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }}
+              className="text-xs text-[#6B7280] hover:text-[#9CA3AF] mt-0.5 transition-colors duration-150"
+            >
+              {expanded ? 'ver menos ↑' : 'ver mais ↓'}
+            </button>
           )}
-          {movie.year && movie.genres?.length > 0 && (
-            <span className="text-[#3F3F46] text-xs" aria-hidden="true">·</span>
-          )}
-          {movie.genres?.length > 0 && (
-            <span className="text-xs text-[#6B7280] truncate">
-              {movie.genres.slice(0, 2).join(', ')}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* ── Row 3: per-person ratings ──────────────────────────────────────── */}
-      {profiles.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {profiles.map((p, pi) => {
-            const r = movie.ratings.find((rt) => rt.user_id === p.id);
-            const label = r && r.score > 0 ? starsText(r.score) : 'Não avaliado';
-            return (
-              <span key={p.id} className="text-xs text-[#9CA3AF]">
-                {pi > 0 && (
-                  <span className="text-[#3F3F46] mr-2" aria-hidden="true">|</span>
-                )}
-                <span className="text-[#6B7280]">{p.display_name}:</span>{' '}
-                <span className={r && r.score > 0 ? 'text-[#FACC15]' : 'text-[#6B7280]'}>
-                  {label}
-                </span>
-              </span>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Row 4: average ────────────────────────────────────────────────── */}
-      {average !== null && (
-        <div className="flex items-center gap-1">
-          <Star
-            size={11}
-            fill="#FACC15"
-            stroke="#FACC15"
-            strokeWidth={1.5}
-            aria-hidden="true"
-          />
-          <span className="text-xs text-[#9CA3AF]">
-            Média: <span className="text-[#F5F5F5] font-medium">{average.toFixed(1)}</span>
-          </span>
         </div>
       )}
     </motion.button>
@@ -138,16 +169,26 @@ export function WatchedCard({ movie, profiles, index, onClick }: WatchedCardProp
 export function WatchedCardSkeleton() {
   return (
     <div
-      className="flex flex-col gap-2 px-4 py-3.5 bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A]"
+      className="flex flex-col bg-[#1A1A1A] rounded-2xl overflow-hidden border border-[#2A2A2A]"
       aria-hidden="true"
     >
-      <div className="flex items-start justify-between gap-3">
-        <Skeleton variant="line" width="55%" height="14px" />
-        <Skeleton variant="line" width="20%" height="11px" />
+      <div className="flex gap-3 p-3">
+        <Skeleton
+          variant="card"
+          className="w-27.5 sm:w-35 aspect-2/3 rounded-lg shrink-0"
+        />
+        <div className="flex flex-col flex-1 gap-2 py-1">
+          <Skeleton variant="line" width="85%" height="16px" />
+          <Skeleton variant="line" width="55%" height="14px" />
+          <Skeleton variant="line" width="40%" height="12px" />
+          <Skeleton variant="line" width="30%" height="10px" />
+        </div>
       </div>
-      <Skeleton variant="line" width="38%" height="11px" />
-      <Skeleton variant="line" width="75%" height="11px" />
-      <Skeleton variant="line" width="28%" height="11px" />
+      <div className="px-3 pb-3 flex flex-col gap-1.5">
+        <Skeleton variant="line" width="100%" height="12px" />
+        <Skeleton variant="line" width="80%"  height="12px" />
+        <Skeleton variant="line" width="60%"  height="12px" />
+      </div>
     </div>
   );
 }

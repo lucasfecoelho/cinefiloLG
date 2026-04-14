@@ -149,11 +149,11 @@ export function useMovies(status?: MovieStatus) {
       if (error) throw error;
 
       if (score !== undefined && score > 0) {
-        await supabase.from('ratings').insert({
+        await supabase.from('movie_ratings').insert({
           movie_id: movie.id,
-          user_id: user.id,
-          score: Math.round(score * 2), // 0-5 → 0-10 for half-star support
-          comment: comment ?? null,
+          user_id:  user.id,
+          rating:   score, // store 0–5 display value directly as DECIMAL(2,1)
+          comment:  comment ?? null,
         });
       }
 
@@ -184,12 +184,12 @@ export function useMovies(status?: MovieStatus) {
       if (error) throw error;
 
       if (score !== undefined && score > 0) {
-        await supabase.from('ratings').upsert(
+        await supabase.from('movie_ratings').upsert(
           {
             movie_id: movieId,
-            user_id: user.id,
-            score: Math.round(score * 2),
-            comment: comment ?? null,
+            user_id:  user.id,
+            rating:   score, // store 0–5 display value directly as DECIMAL(2,1)
+            comment:  comment ?? null,
           },
           { onConflict: 'movie_id,user_id' },
         );

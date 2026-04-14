@@ -3,11 +3,13 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bookmark, Search, SlidersHorizontal, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { useMovies }              from '@/hooks/useMovies';
 import { useProfiles }            from '@/hooks/useProfiles';
 import { Input }                  from '@/components/ui/Input';
 import { EmptyState }             from '@/components/ui/EmptyState';
+import { useToast }               from '@/components/ui/Toast';
 import { ToWatchCard, ToWatchCardSkeleton } from '@/components/movies/ToWatchCard';
 import { ToWatchDetailModal }     from '@/components/movies/ToWatchDetailModal';
 import { FilterModal, DEFAULT_FILTER, isFilterActive } from '@/components/movies/FilterModal';
@@ -18,6 +20,9 @@ import type { MarkAsWatchedParams } from '@/components/movies/MarkAsWatchedModal
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ParaAssistirPage() {
+  const router        = useRouter();
+  const { showToast } = useToast();
+
   // ── Data ─────────────────────────────────────────────────────────────────────
   const {
     movies,
@@ -85,13 +90,19 @@ export default function ParaAssistirPage() {
 
   const handleMoveToWatched = async (params: MarkAsWatchedParams) => {
     if (!selectedMovie) return;
-    await moveToWatched({
-      movieId:     selectedMovie.id,
-      watchedDate: params.watchedDate,
-      score:       params.score > 0 ? params.score : undefined,
-      comment:     params.comment.trim() || undefined,
-    });
-    setSelectedMovie(null);
+    try {
+      await moveToWatched({
+        movieId:     selectedMovie.id,
+        watchedDate: params.watchedDate,
+        score:       params.score > 0 ? params.score : undefined,
+        comment:     params.comment.trim() || undefined,
+      });
+      setSelectedMovie(null);
+      showToast('Filme marcado como assistido!', 'success');
+      router.push('/assistidos');
+    } catch {
+      showToast('Erro ao mover filme.', 'error');
+    }
   };
 
   const handleDelete = async () => {

@@ -12,8 +12,28 @@ export const WATCHED_QUERY_KEY = ['movies', 'watched', 'with-ratings'] as const;
 
 export interface UpsertRatingParams {
   movieId: string;
-  score: number;    // 0–5 display scale; stored ×2 (0–10) in DB
+  score: number;    // 0–5 display scale (0 = remove rating)
   comment?: string;
+}
+
+// ─── Internal adapter ─────────────────────────────────────────────────────────
+
+// DB stores `rating` DECIMAL(2,1) in the 0.5–5.0 range.
+// The UI expects `score` as an integer 0–10 (reads `score / 2` to display).
+// These two functions bridge that gap inside the data layer.
+
+// DB row → Rating shape expected by the UI
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToRating(r: Record<string, any>): Rating {
+  return {
+    id:         r.id,
+    movie_id:   r.movie_id,
+    user_id:    r.user_id,
+    score:      Math.round((r.rating as number) * 2), // 3.5 → 7
+    comment:    r.comment ?? null,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -33,7 +53,7 @@ export function useWatchedMovies() {
             .select('*')
             .eq('status', 'watched')
             .order('watched_date', { ascending: false }),
-          supabase.from('ratings').select('*'),
+          supabase.from('movie_ratings').select('*'),
         ]);
 
       if (moviesErr) throw moviesErr;
@@ -42,17 +62,24 @@ export function useWatchedMovies() {
       // Group ratings by movie_id for O(1) lookup
       const byMovieId = new Map<string, Rating[]>();
       (ratings ?? []).forEach((r) => {
+        const adapted = rowToRating(r);
         const list = byMovieId.get(r.movie_id) ?? [];
-        list.push(r as Rating);
+        list.push(adapted);
         byMovieId.set(r.movie_id, list);
       });
 
       return (movies ?? []).map((m) => {
         const movieRatings = byMovieId.get(m.id) ?? [];
+        const scored       = movieRatings.filter((r) => r.score > 0);
+        const avgRating    = scored.length === 0
+          ? null
+          : Math.round((scored.reduce((s, r) => s + r.score / 2, 0) / scored.length) * 2) / 2;
         return {
           ...m,
-          ratings: movieRatings,
-          my_rating: movieRatings.find((r) => r.user_id === user?.id),
+          ratings:       movieRatings,
+          my_rating:     movieRatings.find((r) => r.user_id === user?.id),
+          avg_rating:    avgRating,
+          total_ratings: scored.length,
         } as MovieWithRatings;
       });
     },
@@ -63,12 +90,25 @@ export function useWatchedMovies() {
   const upsertRatingMutation = useMutation({
     mutationFn: async ({ movieId, score, comment }: UpsertRatingParams) => {
       if (!user) throw new Error('Not authenticated');
-      const { error } = await supabase.from('ratings').upsert(
+
+      if (score === 0) {
+        // score=0 means "no rating" — remove the existing row if present
+        const { error } = await supabase
+          .from('movie_ratings')
+          .delete()
+          .eq('movie_id', movieId)
+          .eq('user_id', user.id);
+        if (error) throw error;
+        return;
+      }
+
+      // score is the 0–5 display value; store directly as DECIMAL(2,1)
+      const { error } = await supabase.from('movie_ratings').upsert(
         {
           movie_id: movieId,
-          user_id: user.id,
-          score: Math.round(score * 2), // 0–5 → 0–10
-          comment: comment?.trim() || null,
+          user_id:  user.id,
+          rating:   score,
+          comment:  comment?.trim() || null,
         },
         { onConflict: 'movie_id,user_id' },
       );
@@ -91,12 +131,12 @@ export function useWatchedMovies() {
   });
 
   return {
-    movies: moviesQuery.data ?? [],
-    isLoading: moviesQuery.isLoading,
-    refetch: moviesQuery.refetch,
-    upsertRating: upsertRatingMutation.mutateAsync,
+    movies:         moviesQuery.data ?? [],
+    isLoading:      moviesQuery.isLoading,
+    refetch:        moviesQuery.refetch,
+    upsertRating:   upsertRatingMutation.mutateAsync,
     isSavingRating: upsertRatingMutation.isPending,
-    deleteMovie: deleteMovieMutation.mutateAsync,
-    isDeleting: deleteMovieMutation.isPending,
+    deleteMovie:    deleteMovieMutation.mutateAsync,
+    isDeleting:     deleteMovieMutation.isPending,
   };
 }

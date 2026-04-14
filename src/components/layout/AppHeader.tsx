@@ -1,9 +1,6 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-
-import { UserAvatar } from '@/components/layout/UserAvatar';
+import { usePathname } from 'next/navigation';
 
 // ─── Route titles ─────────────────────────────────────────────────────────────
 
@@ -19,10 +16,7 @@ const ROUTE_TITLES: Record<string, string> = {
 
 export function AppHeader() {
   const pathname = usePathname();
-  const router   = useRouter();
-
-  const title         = ROUTE_TITLES[pathname] ?? 'Cinefilos LG';
-  const isConfigPage  = pathname === '/configuracoes';
+  const title    = ROUTE_TITLES[pathname] ?? 'Cinefilos LG';
 
   return (
     <header
@@ -33,31 +27,8 @@ export function AppHeader() {
       ].join(' ')}
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="h-14 flex items-center px-4 gap-3">
-        {isConfigPage ? (
-          /* Config page: back button + title */
-          <>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              aria-label="Voltar"
-              className={[
-                'p-2 -ml-2 rounded-xl',
-                'text-[#9CA3AF] hover:text-[#F5F5F5]',
-                'transition-colors duration-150',
-              ].join(' ')}
-            >
-              <ArrowLeft size={20} aria-hidden="true" />
-            </button>
-            <h1 className="text-lg font-bold text-[#F5F5F5]">{title}</h1>
-          </>
-        ) : (
-          /* Regular pages: title + avatar */
-          <>
-            <h1 className="text-lg font-bold text-[#F5F5F5] flex-1">{title}</h1>
-            <UserAvatar />
-          </>
-        )}
+      <div className="h-14 flex items-center px-4">
+        <h1 className="text-lg font-bold text-[#F5F5F5]">{title}</h1>
       </div>
     </header>
   );

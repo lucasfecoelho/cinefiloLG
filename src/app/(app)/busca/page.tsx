@@ -3,11 +3,13 @@
 import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 import { useMovieSearch }       from '@/hooks/useMovieSearch';
 import { useMovies }            from '@/hooks/useMovies';
 import { Input }                from '@/components/ui/Input';
 import { Button }               from '@/components/ui/Button';
+import { useToast }             from '@/components/ui/Toast';
 import {
   SearchResultCard,
   SearchResultCardSkeleton,
@@ -19,6 +21,9 @@ import type { MarkAsWatchedParams }    from '@/components/movies/MarkAsWatchedMo
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BuscaPage() {
+  const router     = useRouter();
+  const { showToast } = useToast();
+
   // ── Search state ─────────────────────────────────────────────────────────────
   const {
     query,
@@ -32,7 +37,7 @@ export default function BuscaPage() {
   } = useMovieSearch();
 
   // ── Existing movies (to mark as already added) ───────────────────────────────
-  const { movies: existingMovies, addToWatchList, isAddingToWatch, addToWatched, isAddingWatched } =
+  const { movies: existingMovies, addToWatchList, addToWatched, isAddingWatched } =
     useMovies();
 
   const existingMap = useMemo(() => {
@@ -48,6 +53,10 @@ export default function BuscaPage() {
     setWatchingId(movie.id);
     try {
       await addToWatchList(movie);
+      showToast('Filme adicionado à lista!', 'success');
+      router.push('/para-assistir');
+    } catch {
+      showToast('Erro ao adicionar filme.', 'error');
     } finally {
       setWatchingId(null);
     }
@@ -58,8 +67,14 @@ export default function BuscaPage() {
 
   const handleConfirmWatched = async (params: MarkAsWatchedParams) => {
     if (!pendingMovie) return;
-    await addToWatched({ movie: pendingMovie, ...params });
-    setPendingMovie(null);
+    try {
+      await addToWatched({ movie: pendingMovie, ...params });
+      setPendingMovie(null);
+      showToast('Filme marcado como assistido!', 'success');
+      router.push('/assistidos');
+    } catch {
+      showToast('Erro ao adicionar filme.', 'error');
+    }
   };
 
   // ── Derived view states ──────────────────────────────────────────────────────

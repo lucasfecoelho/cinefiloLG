@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, Moon, Sun } from 'lucide-react';
+import { Check, LogOut, Moon, Pencil, Sun } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-import { useTheme }  from '@/providers/ThemeProvider';
-import { useAuth }   from '@/providers/AuthProvider';
-import { supabase }  from '@/lib/supabase/client';
-import { Modal }     from '@/components/ui/Modal';
+import { useTheme }       from '@/providers/ThemeProvider';
+import { useAuth }        from '@/providers/AuthProvider';
+import { supabase }       from '@/lib/supabase/client';
+import { Modal }          from '@/components/ui/Modal';
+import { ConfirmModal }   from '@/components/ui/ConfirmModal';
+import { EditNameModal }  from '@/components/settings/EditNameModal';
 import type { PrimaryColor } from '@/types';
 
 // ─── Palettes ─────────────────────────────────────────────────────────────────
@@ -99,16 +101,26 @@ function Row({
 
 export default function ConfiguracoesPage() {
   const { theme, primaryColor, toggleTheme, setPrimaryColor } = useTheme();
-  const { profile, user } = useAuth();
+  const { profile, user, signOut } = useAuth();
 
-  const [notifEnabled, setNotifEnabled] = useState(profile?.notifications_enabled ?? true);
-  const [showHowTo,    setShowHowTo]    = useState(false);
-  const [showTerms,    setShowTerms]    = useState(false);
+  const [notifEnabled,   setNotifEnabled]   = useState(profile?.notifications_enabled ?? true);
+  const [showHowTo,      setShowHowTo]      = useState(false);
+  const [showTerms,      setShowTerms]      = useState(false);
+  const [editNameOpen,   setEditNameOpen]   = useState(false);
+  const [confirmLogout,  setConfirmLogout]  = useState(false);
+  const [signingOut,     setSigningOut]     = useState(false);
 
   // Sync with profile once loaded
   useEffect(() => {
     if (profile) setNotifEnabled(profile.notifications_enabled);
   }, [profile?.notifications_enabled]);
+
+  const handleLogout = async () => {
+    setSigningOut(true);
+    await signOut();
+    setSigningOut(false);
+    setConfirmLogout(false);
+  };
 
   const handleToggleNotifications = async () => {
     const next = !notifEnabled;
@@ -120,6 +132,27 @@ export default function ConfiguracoesPage() {
   return (
     <main className="min-h-screen bg-[#0A0A0A]">
       <div className="flex flex-col gap-6 px-4 pt-4 pb-12">
+
+        {/* ── Conta ────────────────────────────────────────────────────────── */}
+        <Section title="Conta">
+          <button
+            type="button"
+            onClick={() => setEditNameOpen(true)}
+            className={[
+              'w-full flex items-center justify-between gap-3 px-5 py-4',
+              'hover:bg-white/3 active:bg-white/6',
+              'transition-colors duration-100 text-left',
+            ].join(' ')}
+          >
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-[#6B7280]">Seu nome</span>
+              <span className="text-sm font-medium text-[#F5F5F5]">
+                {profile?.display_name ?? '—'}
+              </span>
+            </div>
+            <Pencil size={15} className="text-[#6B7280] shrink-0" aria-hidden="true" />
+          </button>
+        </Section>
 
         {/* ── Aparência ────────────────────────────────────────────────────── */}
         <Section title="Aparência">
@@ -188,11 +221,38 @@ export default function ConfiguracoesPage() {
           <Row label="Termos de uso" onPress={() => setShowTerms(true)} />
         </Section>
 
+        {/* ── Sessão ───────────────────────────────────────────────────────── */}
+        <Section title="Sessão">
+          <Row
+            label="Sair"
+            right={<LogOut size={16} className="text-[#EF4444] shrink-0" aria-hidden="true" />}
+            onPress={() => setConfirmLogout(true)}
+            destructive
+          />
+        </Section>
+
         {/* ── Versão ───────────────────────────────────────────────────────── */}
         <p className="text-center text-xs text-[#3F3F46] pt-2">
           Cinefilos LG · v1.0.0
         </p>
       </div>
+
+      {/* ── Edit name modal ──────────────────────────────────────────────── */}
+      <EditNameModal
+        visible={editNameOpen}
+        onClose={() => setEditNameOpen(false)}
+      />
+
+      {/* ── Confirm logout modal ─────────────────────────────────────────── */}
+      <ConfirmModal
+        visible={confirmLogout}
+        onClose={() => setConfirmLogout(false)}
+        onConfirm={handleLogout}
+        title="Sair da conta?"
+        message="Você precisará fazer login novamente."
+        confirmLabel="Sair"
+        loading={signingOut}
+      />
 
       {/* ── Como usar modal ──────────────────────────────────────────────── */}
       <Modal visible={showHowTo} onClose={() => setShowHowTo(false)} title="Como usar">

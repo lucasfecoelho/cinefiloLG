@@ -38,7 +38,7 @@ export function genreNames(genreIds: number[]): string[] {
 
 // ─── Image URL helpers ────────────────────────────────────────────────────────
 
-export type PosterSize = 'w185' | 'w342' | 'w500' | 'original';
+export type PosterSize = 'w10' | 'w185' | 'w342' | 'w500' | 'original';
 
 export function posterUrl(
   path: string | null | undefined,
