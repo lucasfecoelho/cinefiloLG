@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -31,7 +31,7 @@ function ClapboardIcon() {
       />
 
       {/* ── Flap (rotates from -35° closed at top-center) ── */}
-      <motion.g
+      <m.g
         initial={{ rotate: -35 }}
         animate={{ rotate: 0 }}
         transition={{
@@ -67,7 +67,7 @@ function ClapboardIcon() {
         {/* Hinge pegs */}
         <circle cx="22" cy="44" r="5" fill="#0A0A0A" />
         <circle cx="98" cy="44" r="5" fill="#0A0A0A" />
-      </motion.g>
+      </m.g>
     </svg>
   );
 }
@@ -95,7 +95,7 @@ export function SplashScreen() {
   return (
     <AnimatePresence>
       {show && (
-        <motion.div
+        <m.div
           key="splash"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -109,24 +109,24 @@ export function SplashScreen() {
           aria-live="polite"
         >
           {/* Logo */}
-          <motion.div
+          <m.div
             initial={{ scale: 0.78, opacity: 0 }}
             animate={{ scale: 1,    opacity: 1 }}
             transition={{ duration: 0.4, ease: [0, 0, 0, 1] }}
           >
             <ClapboardIcon />
-          </motion.div>
+          </m.div>
 
           {/* App name */}
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: [0, 0, 0, 1], delay: 0.2 }}
             className="text-lg font-bold text-[#F5F5F5] tracking-wide"
           >
             Cinefilos LG
-          </motion.p>
-        </motion.div>
+          </m.p>
+        </m.div>
       )}
     </AnimatePresence>
   );

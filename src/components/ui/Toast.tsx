@@ -6,7 +6,7 @@ import {
   useContext,
   useState,
 } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           {toasts.map(({ id, message, variant }) => {
             const { bg, border, iconColor, Icon } = VARIANTS[variant];
             return (
-              <motion.div
+              <m.div
                 key={id}
                 initial={{ opacity: 0, y: 16, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0,  scale: 1    }}
@@ -112,7 +112,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               >
                 <Icon size={16} className={iconColor} aria-hidden="true" />
                 <span className="text-sm font-medium text-[#F5F5F5]">{message}</span>
-              </motion.div>
+              </m.div>
             );
           })}
         </AnimatePresence>

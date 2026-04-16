@@ -40,12 +40,46 @@ export function genreNames(genreIds: number[]): string[] {
 
 export type PosterSize = 'w10' | 'w185' | 'w342' | 'w500' | 'original';
 
+/** @deprecated Use getTmdbImageUrl instead. */
 export function posterUrl(
   path: string | null | undefined,
   size: PosterSize = 'w500',
 ): string | null {
   if (!path) return null;
   return `${IMAGE_BASE}/${size}${path}`;
+}
+
+// Semantic size tokens → concrete TMDB width strings
+export type TmdbImageSize = 'card' | 'detail' | 'backdrop';
+
+const SIZE_MAP: Record<TmdbImageSize, PosterSize> = {
+  card:     'w342',
+  detail:   'w500',
+  backdrop: 'original',
+};
+
+/**
+ * Build a TMDB image URL from a raw path (e.g. "/abc123.jpg").
+ * Use `'card'` for list thumbnails (~110–140 px), `'detail'` for modals.
+ */
+export function getTmdbImageUrl(
+  path: string | null | undefined,
+  size: TmdbImageSize = 'detail',
+): string | null {
+  if (!path) return null;
+  return `${IMAGE_BASE}/${SIZE_MAP[size]}${path}`;
+}
+
+/**
+ * Upgrade a stored card-size URL to a larger size for detail views.
+ * Works for any size already embedded in the URL (w342, w500, etc.).
+ */
+export function upgradePosterUrl(
+  url:  string | null | undefined,
+  size: TmdbImageSize = 'detail',
+): string | null {
+  if (!url) return null;
+  return url.replace(/\/w\d+\//, `/${SIZE_MAP[size]}/`);
 }
 
 // ─── Extended movie detail type (from /movie/{id}) ────────────────────────────

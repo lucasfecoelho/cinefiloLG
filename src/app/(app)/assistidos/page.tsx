@@ -1,26 +1,34 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { staggerContainer } from '@/theme/animations';
 import { CheckCircle2, Search, SlidersHorizontal, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 import { useWatchedMovies }  from '@/hooks/useWatchedMovies';
 import { useProfiles }       from '@/hooks/useProfiles';
 import { useAuth }           from '@/providers/AuthProvider';
 import { Input }             from '@/components/ui/Input';
 import { EmptyState }        from '@/components/ui/EmptyState';
+import { ModalSkeleton }     from '@/components/ui/ModalSkeleton';
 import {
   WatchedCard,
   WatchedCardSkeleton,
 }                            from '@/components/movies/WatchedCard';
-import { WatchedDetailModal } from '@/components/movies/WatchedDetailModal';
-import {
-  FilterModal,
-  DEFAULT_FILTER,
-  isFilterActive,
-}                            from '@/components/movies/FilterModal';
+import { DEFAULT_FILTER, isFilterActive } from '@/components/movies/FilterModal';
 import type { MovieWithRatings } from '@/types';
 import type { FilterState }      from '@/components/movies/FilterModal';
+
+const WatchedDetailModal = dynamic(
+  () => import('@/components/movies/WatchedDetailModal').then(m => m.WatchedDetailModal),
+  { ssr: false, loading: () => <ModalSkeleton /> },
+);
+
+const FilterModal = dynamic(
+  () => import('@/components/movies/FilterModal').then(m => m.FilterModal),
+  { ssr: false },
+);
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -189,7 +197,7 @@ export default function AssistidosPage() {
           {/* Expandable search input */}
           <AnimatePresence>
             {searchExpanded && (
-              <motion.div
+              <m.div
                 key="search-input"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -207,7 +215,7 @@ export default function AssistidosPage() {
                     autoComplete="off"
                   />
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
@@ -248,19 +256,23 @@ export default function AssistidosPage() {
 
           {/* Cards */}
           {!isLoading && filteredMovies.length > 0 && (
-            <div className="flex flex-col gap-2.5">
+            <m.div
+              className="flex flex-col gap-2.5"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+            >
               <AnimatePresence initial={false}>
-                {filteredMovies.map((movie, index) => (
+                {filteredMovies.map((movie) => (
                   <WatchedCard
                     key={movie.id}
                     movie={movie}
                     profiles={sortedProfiles}
-                    index={index}
                     onClick={() => setSelectedMovie(movie)}
                   />
                 ))}
               </AnimatePresence>
-            </div>
+            </m.div>
           )}
         </div>
       </main>

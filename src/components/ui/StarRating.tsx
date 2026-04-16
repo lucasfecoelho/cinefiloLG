@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -180,7 +180,7 @@ export function StarRating({
            *   • delay scales with star index for a left-to-right sequential feel
            */
           const inner = (
-            <motion.div
+            <m.div
               key={`${star}-${fill}`}
               initial={
                 mountedRef.current
@@ -196,7 +196,7 @@ export function StarRating({
               }}
             >
               <StarGlyph fill={fill} px={px} clipId={clipId} />
-            </motion.div>
+            </m.div>
           );
 
           if (!interactive) {
@@ -204,7 +204,7 @@ export function StarRating({
           }
 
           return (
-            <motion.button
+            <m.button
               key={star}
               type="button"
               onClick={() => handlePress(star)}
@@ -215,7 +215,7 @@ export function StarRating({
               className="focus:outline-none cursor-pointer"
             >
               {inner}
-            </motion.button>
+            </m.button>
           );
         })}
       </div>
@@ -228,7 +228,7 @@ export function StarRating({
             const dist = px * 2.8;
             const sz   = Math.max(3, Math.round(px * 0.2));
             return (
-              <motion.span
+              <m.span
                 key={deg}
                 initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
                 animate={{

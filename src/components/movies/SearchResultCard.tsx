@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
+
+import { staggerItem }             from '@/theme/animations';
+import { usePrefetchMovieDetails } from '@/hooks/usePrefetchMovieDetails';
 import { Bookmark, Eye, Film } from 'lucide-react';
 
 import { Button }   from '@/components/ui/Button';
@@ -20,8 +23,6 @@ export interface SearchResultCardProps {
   onAddToWatched:  () => void;
   isAddingWatch:   boolean;
   isAddingWatched: boolean;
-  /** Used to stagger entrance animation. */
-  index:           number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -60,8 +61,8 @@ export function SearchResultCard({
   onAddToWatched,
   isAddingWatch,
   isAddingWatched,
-  index,
 }: SearchResultCardProps) {
+  const prefetch = usePrefetchMovieDetails();
   const src      = posterUrl(movie.poster_path, 'w342');
   const year     = movie.release_date ? movie.release_date.slice(0, 4) : null;
   const genres   = genreNames(movie.genre_ids).slice(0, 3).join(', ');
@@ -83,14 +84,9 @@ export function SearchResultCard({
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.28,
-        ease:     [0.2, 0, 0, 1],
-        delay:    Math.min(index * 0.055, 0.35),
-      }}
+    <m.article
+      variants={staggerItem}
+      onPointerEnter={() => prefetch(movie.id)}
       className="flex flex-col rounded-2xl overflow-hidden bg-[#1A1A1A] border border-[#2A2A2A]"
     >
       {/* ── Poster + info ───────────────────────────────────────────────────── */}
@@ -146,7 +142,7 @@ export function SearchResultCard({
       {/* ── Synopsis ────────────────────────────────────────────────────────── */}
       {synopsis && (
         <div className="px-3 pb-1">
-          <motion.div
+          <m.div
             initial={false}
             animate={{ height: !clampNeeded || expanded ? 'auto' : COLLAPSED_H }}
             transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
@@ -158,7 +154,7 @@ export function SearchResultCard({
             >
               {synopsis}
             </p>
-          </motion.div>
+          </m.div>
           {clampNeeded && (
             <button
               type="button"
@@ -198,7 +194,7 @@ export function SearchResultCard({
           Assistido
         </Button>
       </div>
-    </motion.article>
+    </m.article>
   );
 }
 

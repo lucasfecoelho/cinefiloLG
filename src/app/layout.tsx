@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
-import { AuthProvider }  from '@/providers/AuthProvider';
-import { QueryProvider } from '@/providers/QueryProvider';
-import { ThemeProvider } from '@/providers/ThemeProvider';
-import { SplashScreen }  from '@/components/ui/SplashScreen';
-import { SWRegistrar }   from '@/components/layout/SWRegistrar';
+import { AuthProvider }    from '@/providers/AuthProvider';
+import { QueryProvider }   from '@/providers/QueryProvider';
+import { ThemeProvider }   from '@/providers/ThemeProvider';
+import { MotionProvider }  from '@/providers/MotionProvider';
+import { SplashScreen }    from '@/components/ui/SplashScreen';
+import { SWRegistrar }     from '@/components/layout/SWRegistrar';
 
 const font = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -50,14 +51,16 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="h-full font-sans antialiased">
-        <QueryProvider>
-          <AuthProvider>
-            <ThemeProvider>
-              <SplashScreen />
-              {children}
-            </ThemeProvider>
-          </AuthProvider>
-        </QueryProvider>
+        <MotionProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <ThemeProvider>
+                <SplashScreen />
+                {children}
+              </ThemeProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </MotionProvider>
         <SWRegistrar />
       </body>
     </html>

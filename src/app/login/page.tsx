@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 import { useAuth } from '@/providers/AuthProvider';
@@ -129,29 +129,29 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-6">
-      <motion.div
+      <m.div
         className="w-full max-w-100"
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
       >
         {/* Logo */}
-        <motion.div variants={staggerItem} className="flex justify-center mb-8">
+        <m.div variants={staggerItem} className="flex justify-center mb-8">
           <CineLogo />
-        </motion.div>
+        </m.div>
 
         {/* Heading */}
-        <motion.div variants={staggerItem} className="text-center mb-8">
+        <m.div variants={staggerItem} className="text-center mb-8">
           <h1 className="text-[28px] font-bold text-white tracking-tight leading-tight">
             Cinefilos LG
           </h1>
           <p className="text-[#6B7280] mt-2 text-sm">
             Faça login para continuar
           </p>
-        </motion.div>
+        </m.div>
 
         {/* Form */}
-        <motion.form
+        <m.form
           variants={staggerItem}
           onSubmit={handleSubmit}
           className="flex flex-col gap-3"
@@ -192,7 +192,7 @@ export default function LoginPage() {
           {/* Error message */}
           <AnimatePresence>
             {error && (
-              <motion.p
+              <m.p
                 key="error"
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -202,12 +202,12 @@ export default function LoginPage() {
                 role="alert"
               >
                 {error}
-              </motion.p>
+              </m.p>
             )}
           </AnimatePresence>
 
           {/* Submit */}
-          <motion.button
+          <m.button
             type="submit"
             disabled={!canSubmit}
             whileTap={canSubmit ? { scale: 0.97 } : undefined}
@@ -227,9 +227,9 @@ export default function LoginPage() {
             ) : (
               'Entrar'
             )}
-          </motion.button>
-        </motion.form>
-      </motion.div>
+          </m.button>
+        </m.form>
+      </m.div>
     </main>
   );
 }

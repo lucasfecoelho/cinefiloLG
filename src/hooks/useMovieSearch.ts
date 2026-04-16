@@ -51,7 +51,7 @@ export function useMovieSearch(): UseMovieSearchResult {
       lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
     initialPageParam: 1,
     enabled: debouncedQuery.length >= MIN_QUERY_LENGTH,
-    staleTime: 1000 * 60 * 5, // 5 min — same search shouldn't refetch often
+    staleTime: 1000 * 60 * 60 * 24, // 24 h — TMDB metadata rarely changes
   });
 
   const movies = infiniteQuery.data?.pages.flatMap((p) => p.results) ?? [];

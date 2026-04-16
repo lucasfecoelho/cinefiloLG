@@ -2,15 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { Check, LogOut, Moon, Pencil, Sun } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
+import dynamic from 'next/dynamic';
 
 import { useTheme }       from '@/providers/ThemeProvider';
 import { useAuth }        from '@/providers/AuthProvider';
 import { supabase }       from '@/lib/supabase/client';
 import { Modal }          from '@/components/ui/Modal';
 import { ConfirmModal }   from '@/components/ui/ConfirmModal';
-import { EditNameModal }  from '@/components/settings/EditNameModal';
 import type { PrimaryColor } from '@/types';
+
+const EditNameModal = dynamic(
+  () => import('@/components/settings/EditNameModal').then(m => m.EditNameModal),
+  { ssr: false },
+);
 
 // ─── Palettes ─────────────────────────────────────────────────────────────────
 
@@ -27,7 +32,7 @@ const COLORS: { key: PrimaryColor; hex: string; label: string }[] = [
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   return (
-    <motion.button
+    <m.button
       type="button"
       role="switch"
       aria-checked={enabled}
@@ -37,12 +42,12 @@ function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void 
         enabled ? 'bg-(--color-primary)' : 'bg-[#3F3F46]',
       ].join(' ')}
     >
-      <motion.span
+      <m.span
         className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm"
         animate={{ x: enabled ? 24 : 0 }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       />
-    </motion.button>
+    </m.button>
   );
 }
 
@@ -176,7 +181,7 @@ export default function ConfiguracoesPage() {
               {COLORS.map(({ key, hex, label }) => {
                 const isActive = key === primaryColor;
                 return (
-                  <motion.button
+                  <m.button
                     key={key}
                     type="button"
                     aria-label={label}
@@ -195,7 +200,7 @@ export default function ConfiguracoesPage() {
                         aria-hidden="true"
                       />
                     )}
-                  </motion.button>
+                  </m.button>
                 );
               })}
             </div>

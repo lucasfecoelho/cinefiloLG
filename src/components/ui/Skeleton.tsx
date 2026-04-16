@@ -15,7 +15,7 @@ export interface SkeletonProps {
 
 // ─── Base ─────────────────────────────────────────────────────────────────────
 
-const BASE = 'animate-pulse bg-[#F3F4F6] dark:bg-[#1E1E1E]';
+const BASE = 'skeleton-shimmer';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 

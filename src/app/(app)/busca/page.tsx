@@ -2,8 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
+import { staggerContainer } from '@/theme/animations';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
 import { useMovieSearch }       from '@/hooks/useMovieSearch';
 import { useMovies }            from '@/hooks/useMovies';
@@ -14,9 +16,13 @@ import {
   SearchResultCard,
   SearchResultCardSkeleton,
 }                               from '@/components/movies/SearchResultCard';
-import { MarkAsWatchedModal }   from '@/components/movies/MarkAsWatchedModal';
 import type { TMDBMovie, MovieStatus } from '@/types';
 import type { MarkAsWatchedParams }    from '@/components/movies/MarkAsWatchedModal';
+
+const MarkAsWatchedModal = dynamic(
+  () => import('@/components/movies/MarkAsWatchedModal').then(m => m.MarkAsWatchedModal),
+  { ssr: false },
+);
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -106,7 +112,7 @@ export default function BuscaPage() {
           {/* Empty state — no query */}
           <AnimatePresence mode="wait">
             {showEmpty && (
-              <motion.div
+              <m.div
                 key="empty"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -118,12 +124,12 @@ export default function BuscaPage() {
                 <p className="text-[#6B7280] text-sm">
                   Pesquise um filme para começar
                 </p>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Skeleton — first fetch */}
             {showSkeleton && (
-              <motion.div
+              <m.div
                 key="skeleton"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -135,12 +141,12 @@ export default function BuscaPage() {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <SearchResultCardSkeleton key={i} />
                 ))}
-              </motion.div>
+              </m.div>
             )}
 
             {/* No results */}
             {showNoResult && (
-              <motion.p
+              <m.p
                 key="no-result"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -150,12 +156,12 @@ export default function BuscaPage() {
               >
                 Nenhum filme encontrado para{' '}
                 <span className="text-[#9CA3AF] font-medium">&ldquo;{query}&rdquo;</span>
-              </motion.p>
+              </m.p>
             )}
 
             {/* Results */}
             {showResults && (
-              <motion.div
+              <m.div
                 key="results"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -163,18 +169,24 @@ export default function BuscaPage() {
                 transition={{ duration: 0.15 }}
                 className="flex flex-col gap-3"
               >
-                {movies.map((movie, index) => (
-                  <SearchResultCard
-                    key={movie.id}
-                    movie={movie}
-                    index={index}
-                    existingStatus={existingMap.get(movie.id) ?? null}
-                    onAddToWatch={() => handleAddToWatch(movie)}
-                    onAddToWatched={() => setPendingMovie(movie)}
-                    isAddingWatch={watchingId === movie.id}
-                    isAddingWatched={false}
-                  />
-                ))}
+                <m.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="flex flex-col gap-3"
+                >
+                  {movies.map((movie) => (
+                    <SearchResultCard
+                      key={movie.id}
+                      movie={movie}
+                      existingStatus={existingMap.get(movie.id) ?? null}
+                      onAddToWatch={() => handleAddToWatch(movie)}
+                      onAddToWatched={() => setPendingMovie(movie)}
+                      isAddingWatch={watchingId === movie.id}
+                      isAddingWatched={false}
+                    />
+                  ))}
+                </m.div>
 
                 {/* Load more */}
                 {hasNextPage && (
@@ -189,7 +201,7 @@ export default function BuscaPage() {
                     </Button>
                   </div>
                 )}
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>

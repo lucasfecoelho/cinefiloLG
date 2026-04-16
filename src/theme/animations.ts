@@ -85,11 +85,32 @@ export const staggerItem: Variants = {
   },
 };
 
-// ─── Press / tap ─────────────────────────────────────────────────────────────
+// ─── Card tap / press ─────────────────────────────────────────────────────────
+
+/** Spread onto a motion element: `{...cardTap}` */
+export const cardTap = {
+  whileTap: { scale: 0.97 as number },
+};
 
 export const scalePress = {
   whileTap: { scale: 0.96 },
   transition: { duration: 0.1, ease: EASE_ACCELERATE } as Transition,
+};
+
+// ─── Spring transition ────────────────────────────────────────────────────────
+
+export const springBounce: Transition = {
+  type: 'spring',
+  stiffness: 300,
+  damping: 24,
+};
+
+// ─── Slide in from left ───────────────────────────────────────────────────────
+
+export const slideInLeft: Variants = {
+  hidden:  { opacity: 0, x: -16 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.2, ease: EASE_STANDARD } },
+  exit:    { opacity: 0, x: -16, transition: { duration: 0.15, ease: EASE_ACCELERATE } },
 };
 
 // ─── Overlay backdrop ─────────────────────────────────────────────────────────

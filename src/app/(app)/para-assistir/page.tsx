@@ -1,21 +1,33 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { staggerContainer } from '@/theme/animations';
 import { Bookmark, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
 import { useMovies }              from '@/hooks/useMovies';
 import { useProfiles }            from '@/hooks/useProfiles';
 import { Input }                  from '@/components/ui/Input';
 import { EmptyState }             from '@/components/ui/EmptyState';
 import { useToast }               from '@/components/ui/Toast';
+import { ModalSkeleton }          from '@/components/ui/ModalSkeleton';
 import { ToWatchCard, ToWatchCardSkeleton } from '@/components/movies/ToWatchCard';
-import { ToWatchDetailModal }     from '@/components/movies/ToWatchDetailModal';
-import { FilterModal, DEFAULT_FILTER, isFilterActive } from '@/components/movies/FilterModal';
+import { DEFAULT_FILTER, isFilterActive } from '@/components/movies/FilterModal';
 import type { Movie }             from '@/types';
 import type { FilterState }       from '@/components/movies/FilterModal';
 import type { MarkAsWatchedParams } from '@/components/movies/MarkAsWatchedModal';
+
+const ToWatchDetailModal = dynamic(
+  () => import('@/components/movies/ToWatchDetailModal').then(m => m.ToWatchDetailModal),
+  { ssr: false, loading: () => <ModalSkeleton /> },
+);
+
+const FilterModal = dynamic(
+  () => import('@/components/movies/FilterModal').then(m => m.FilterModal),
+  { ssr: false },
+);
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -168,7 +180,7 @@ export default function ParaAssistirPage() {
           {/* Expandable search input */}
           <AnimatePresence>
             {searchExpanded && (
-              <motion.div
+              <m.div
                 key="search-input"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -186,7 +198,7 @@ export default function ParaAssistirPage() {
                     autoComplete="off"
                   />
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
@@ -227,18 +239,22 @@ export default function ParaAssistirPage() {
 
           {/* Cards */}
           {!isLoading && filteredMovies.length > 0 && (
-            <div className="flex flex-col gap-2.5">
+            <m.div
+              className="flex flex-col gap-2.5"
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+            >
               <AnimatePresence initial={false}>
-                {filteredMovies.map((movie, index) => (
+                {filteredMovies.map((movie) => (
                   <ToWatchCard
                     key={movie.id}
                     movie={movie}
-                    index={index}
                     onClick={() => setSelectedMovie(movie)}
                   />
                 ))}
               </AnimatePresence>
-            </div>
+            </m.div>
           )}
         </div>
       </main>

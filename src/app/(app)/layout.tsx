@@ -1,7 +1,8 @@
-import { RealtimeProvider } from '@/providers/RealtimeProvider';
-import { AppHeader }         from '@/components/layout/AppHeader';
-import { BottomTabBar }      from '@/components/layout/BottomTabBar';
-import { ToastProvider }     from '@/components/ui/Toast';
+import { RealtimeProvider }  from '@/providers/RealtimeProvider';
+import { AppHeader }          from '@/components/layout/AppHeader';
+import { BottomTabBar }       from '@/components/layout/BottomTabBar';
+import { PageTransition }     from '@/components/layout/PageTransition';
+import { ToastProvider }      from '@/components/ui/Toast';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -18,7 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))',
           }}
         >
-          {children}
+          <PageTransition>{children}</PageTransition>
         </div>
 
         {/* Fixed tab bar — z-40, accounts for safe-area-inset-bottom internally */}

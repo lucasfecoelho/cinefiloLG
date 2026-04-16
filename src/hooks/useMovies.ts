@@ -36,7 +36,7 @@ function tmdbMovieToRow(movie: TMDBMovie, userId: string, status: MovieStatus) {
     tmdb_id: movie.id,
     title: movie.title,
     year,
-    poster_url: posterUrl(movie.poster_path, 'w500'),
+    poster_url: posterUrl(movie.poster_path, 'w342'),
     synopsis: movie.overview || null,
     genres: genreNames(movie.genre_ids),
     status,

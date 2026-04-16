@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { Bookmark, Bell, Eye, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 import { useNotificationCount } from '@/hooks/useNotificationCount';
 import { useAuth }               from '@/providers/AuthProvider';
@@ -87,7 +87,7 @@ export function BottomTabBar() {
             >
               {/* Sliding top indicator */}
               {isActive && (
-                <motion.div
+                <m.div
                   layoutId="tab-indicator"
                   className="absolute top-0 w-8 h-0.5 rounded-full bg-(--color-primary)"
                   transition={{ type: 'spring', stiffness: 500, damping: 38 }}

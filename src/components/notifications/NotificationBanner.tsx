@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -22,7 +22,7 @@ export function NotificationBanner({ visible, onDismiss }: NotificationBannerPro
   return (
     <AnimatePresence>
       {visible && (
-        <motion.div
+        <m.div
           key="notification-banner"
           initial={{ y: -80, opacity: 0 }}
           animate={{ y: 0,   opacity: 1 }}
@@ -52,7 +52,7 @@ export function NotificationBanner({ visible, onDismiss }: NotificationBannerPro
           >
             <X size={16} aria-hidden="true" />
           </button>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

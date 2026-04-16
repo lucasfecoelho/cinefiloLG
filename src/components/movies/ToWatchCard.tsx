@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
+
+import { staggerItem }             from '@/theme/animations';
+import { usePrefetchMovieDetails } from '@/hooks/usePrefetchMovieDetails';
 import { Film } from 'lucide-react';
 
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -12,7 +15,6 @@ import type { Movie } from '@/types';
 
 export interface ToWatchCardProps {
   movie:   Movie;
-  index:   number;
   onClick: () => void;
 }
 
@@ -26,7 +28,8 @@ const COLLAPSED_H = 68; // px — 3 lines of text-sm + leading-relaxed
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
-export function ToWatchCard({ movie, index, onClick }: ToWatchCardProps) {
+export function ToWatchCard({ movie, onClick }: ToWatchCardProps) {
+  const prefetch = usePrefetchMovieDetails();
   const genres   = (movie.genres ?? []).slice(0, 3).join(', ');
   const meta     = [movie.year, genres].filter(Boolean).join(' · ');
   const synopsis = movie.synopsis;
@@ -45,18 +48,13 @@ export function ToWatchCard({ movie, index, onClick }: ToWatchCardProps) {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <motion.button
+    <m.button
       type="button"
       onClick={onClick}
+      onPointerEnter={() => prefetch(movie.tmdb_id)}
       layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      variants={staggerItem}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.18 } }}
-      transition={{
-        duration: 0.26,
-        ease:     [0.2, 0, 0, 1],
-        delay:    Math.min(index * 0.06, 0.3),
-      }}
       whileTap={{ scale: 0.97 }}
       className={[
         'w-full text-left flex flex-col',
@@ -106,7 +104,7 @@ export function ToWatchCard({ movie, index, onClick }: ToWatchCardProps) {
       {/* ── Synopsis ────────────────────────────────────────────────────────── */}
       {synopsis && (
         <div className="px-3 pb-3">
-          <motion.div
+          <m.div
             initial={false}
             animate={{ height: !clampNeeded || expanded ? 'auto' : COLLAPSED_H }}
             transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
@@ -118,7 +116,7 @@ export function ToWatchCard({ movie, index, onClick }: ToWatchCardProps) {
             >
               {synopsis}
             </p>
-          </motion.div>
+          </m.div>
           {clampNeeded && (
             <button
               type="button"
@@ -133,7 +131,7 @@ export function ToWatchCard({ movie, index, onClick }: ToWatchCardProps) {
           )}
         </div>
       )}
-    </motion.button>
+    </m.button>
   );
 }
 

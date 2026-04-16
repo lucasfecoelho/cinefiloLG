@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { X } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ export function Modal({ visible, onClose, title, children }: ModalProps) {
     <AnimatePresence>
       {visible && (
         // Backdrop — fades in/out; click outside closes
-        <motion.div
+        <m.div
           key="modal-backdrop"
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
@@ -41,7 +41,7 @@ export function Modal({ visible, onClose, title, children }: ModalProps) {
           onClick={onClose}
         >
           {/* Content — slides up independently */}
-          <motion.div
+          <m.div
             role="dialog"
             aria-modal="true"
             className={[
@@ -91,8 +91,8 @@ export function Modal({ visible, onClose, title, children }: ModalProps) {
             <div className="overflow-y-auto flex-1 overscroll-contain">
               {children}
             </div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,16 +15,21 @@ export interface EmptyStateProps {
 
 export function EmptyState({ icon, title, description }: EmptyStateProps) {
   return (
-    <motion.div
+    <m.div
       className="flex flex-col items-center justify-center gap-4 py-16 px-8 text-center"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.2, 0, 0, 1] }}
     >
       {/* Icon */}
-      <span className="text-[#D1D5DB] dark:text-[#3F3F46]" aria-hidden="true">
+      <m.span
+        className="text-[#D1D5DB] dark:text-[#3F3F46]"
+        aria-hidden="true"
+        animate={{ y: [0, -4, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+      >
         {icon}
-      </span>
+      </m.span>
 
       {/* Text */}
       <div>
@@ -37,6 +42,6 @@ export function EmptyState({ icon, title, description }: EmptyStateProps) {
           </p>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

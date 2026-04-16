@@ -8,6 +8,7 @@ import { Modal }               from '@/components/ui/Modal';
 import { Button }              from '@/components/ui/Button';
 import { ConfirmModal }        from '@/components/ui/ConfirmModal';
 import { MarkAsWatchedModal }  from '@/components/movies/MarkAsWatchedModal';
+import { upgradePosterUrl }    from '@/lib/tmdb';
 import type { Movie }          from '@/types';
 import type { MarkAsWatchedParams } from '@/components/movies/MarkAsWatchedModal';
 
@@ -82,7 +83,7 @@ export function ToWatchDetailModal({
             <div className="relative w-full h-52 bg-[#2A2A2A] shrink-0">
               {displayed.poster_url ? (
                 <Image
-                  src={displayed.poster_url}
+                  src={upgradePosterUrl(displayed.poster_url, 'detail') ?? displayed.poster_url}
                   alt={`Poster de ${displayed.title}`}
                   fill
                   sizes="(max-width: 640px) 90vw, 500px"

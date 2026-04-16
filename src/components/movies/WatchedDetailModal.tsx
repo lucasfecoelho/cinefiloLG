@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Film } from 'lucide-react';
 
-import { Modal }        from '@/components/ui/Modal';
-import { Button }       from '@/components/ui/Button';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { StarRating }   from '@/components/ui/StarRating';
+import { Modal }           from '@/components/ui/Modal';
+import { Button }          from '@/components/ui/Button';
+import { ConfirmModal }    from '@/components/ui/ConfirmModal';
+import { StarRating }      from '@/components/ui/StarRating';
+import { upgradePosterUrl } from '@/lib/tmdb';
 import type { MovieWithRatings, Profile } from '@/types';
 import type { UpsertRatingParams }        from '@/hooks/useWatchedMovies';
 
@@ -201,7 +202,7 @@ export function WatchedDetailModal({
             <div className="relative w-full h-52 bg-[#2A2A2A] shrink-0">
               {displayed.poster_url ? (
                 <Image
-                  src={displayed.poster_url}
+                  src={upgradePosterUrl(displayed.poster_url, 'detail') ?? displayed.poster_url}
                   alt={`Poster de ${displayed.title}`}
                   fill
                   sizes="(max-width: 640px) 90vw, 500px"
