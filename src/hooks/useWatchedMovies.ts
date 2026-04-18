@@ -46,29 +46,42 @@ export function useWatchedMovies() {
   const moviesQuery = useQuery({
     queryKey: WATCHED_QUERY_KEY,
     queryFn: async (): Promise<MovieWithRatings[]> => {
-      const [{ data: movies, error: moviesErr }, { data: ratings, error: ratingsErr }] =
-        await Promise.all([
-          supabase
-            .from('movies')
-            .select('*')
-            .eq('status', 'watched')
-            .order('watched_date', { ascending: false }),
-          supabase.from('movie_ratings').select('*'),
-        ]);
+      const [moviesResult, ratingsResult] = await Promise.all([
+        supabase
+          .from('movies')
+          .select('*')
+          .eq('status', 'watched')
+          .order('watched_date', { ascending: false }),
+        supabase.from('movie_ratings').select('*'),
+      ]);
 
-      if (moviesErr) throw moviesErr;
-      if (ratingsErr) throw ratingsErr;
+      // Movies are mandatory — fail fast if they can't be loaded.
+      if (moviesResult.error) throw moviesResult.error;
+
+      // Ratings are supplementary: if the table is missing (migration not yet
+      // applied) or any other error occurs, log it but still return the movies.
+      if (ratingsResult.error) {
+        console.error(
+          '[useWatchedMovies] movie_ratings query failed:',
+          ratingsResult.error.message,
+          '| code:', ratingsResult.error.code,
+          '\n→ Se a tabela não existir, aplique a migration 20260414_movie_ratings.sql no Supabase Dashboard.',
+        );
+      }
+
+      const movies  = moviesResult.data  ?? [];
+      const ratings = ratingsResult.data ?? [];
 
       // Group ratings by movie_id for O(1) lookup
       const byMovieId = new Map<string, Rating[]>();
-      (ratings ?? []).forEach((r) => {
+      (ratings).forEach((r) => {
         const adapted = rowToRating(r);
         const list = byMovieId.get(r.movie_id) ?? [];
         list.push(adapted);
         byMovieId.set(r.movie_id, list);
       });
 
-      return (movies ?? []).map((m) => {
+      return (movies).map((m) => {
         const movieRatings = byMovieId.get(m.id) ?? [];
         const scored       = movieRatings.filter((r) => r.score > 0);
         const avgRating    = scored.length === 0
