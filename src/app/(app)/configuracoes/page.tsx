@@ -20,6 +20,11 @@ const EditNameModal = dynamic(
   { ssr: false },
 );
 
+const AvatarCropModal = dynamic(
+  () => import('@/components/ui/AvatarCropModal').then(m => m.AvatarCropModal),
+  { ssr: false },
+);
+
 // ─── Palettes ─────────────────────────────────────────────────────────────────
 
 const COLORS: { key: PrimaryColor; hex: string; label: string }[] = [
@@ -118,6 +123,7 @@ export default function ConfiguracoesPage() {
   const [avatarUrl,      setAvatarUrl]      = useState(profile?.avatar_url ?? null);
   const [bounceKey,      setBounceKey]      = useState(0);
   const [confirmRemove,  setConfirmRemove]  = useState(false);
+  const [cropObjectUrl,  setCropObjectUrl]  = useState<string | null>(null);
 
   const [notifEnabled,   setNotifEnabled]   = useState(profile?.notifications_enabled ?? true);
   const [showHowTo,      setShowHowTo]      = useState(false);
@@ -143,18 +149,30 @@ export default function ConfiguracoesPage() {
     setConfirmLogout(false);
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset file input so the same file can be selected again
     e.target.value = '';
+    if (cropObjectUrl) URL.revokeObjectURL(cropObjectUrl);
+    setCropObjectUrl(URL.createObjectURL(file));
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    const url = cropObjectUrl;
+    setCropObjectUrl(null);
+    if (url) URL.revokeObjectURL(url);
     try {
-      const url = await upload(file);
-      setAvatarUrl(url);
+      const newUrl = await upload(blob);
+      setAvatarUrl(newUrl);
       setBounceKey((k) => k + 1);
     } catch {
       showToast('Não foi possível salvar a foto.', 'error');
     }
+  };
+
+  const handleCropCancel = () => {
+    if (cropObjectUrl) URL.revokeObjectURL(cropObjectUrl);
+    setCropObjectUrl(null);
   };
 
   const handleRemoveAvatar = async () => {
@@ -347,6 +365,14 @@ export default function ConfiguracoesPage() {
       <EditNameModal
         visible={editNameOpen}
         onClose={() => setEditNameOpen(false)}
+      />
+
+      {/* ── Crop / reposition modal ───────────────────────────────────────── */}
+      <AvatarCropModal
+        objectUrl={cropObjectUrl}
+        visible={!!cropObjectUrl}
+        onConfirm={handleCropConfirm}
+        onCancel={handleCropCancel}
       />
 
       {/* ── Confirm remove avatar ─────────────────────────────────────────── */}

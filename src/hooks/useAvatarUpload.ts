@@ -4,52 +4,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase }       from '@/lib/supabase/client';
 import { useAuth }        from '@/providers/AuthProvider';
 
-// ─── Canvas resize ────────────────────────────────────────────────────────────
-
-const MAX_PX   = 256;
-const QUALITY  = 0.8;
-
-function resizeToBlob(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    const url = URL.createObjectURL(file);
-
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-
-      const { width, height } = img;
-      const scale = Math.min(MAX_PX / width, MAX_PX / height, 1);
-
-      const canvas = document.createElement('canvas');
-      canvas.width  = Math.round(width  * scale);
-      canvas.height = Math.round(height * scale);
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('canvas 2d unavailable')); return; }
-
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('toBlob returned null'))),
-        'image/jpeg',
-        QUALITY,
-      );
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('failed to load image for resize'));
-    };
-
-    img.src = url;
-  });
-}
-
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export interface UseAvatarUploadReturn {
-  /** Upload a File, resize it, save to Storage and update both profile + auth metadata. Returns the new URL. */
-  upload:      (file: File) => Promise<string>;
+  /** Upload a cropped Blob, save to Storage and update both profile + auth metadata. Returns the new URL. */
+  upload:      (blob: Blob) => Promise<string>;
   /** Delete from Storage and clear avatar_url from both profile + auth metadata. */
   remove:      () => Promise<void>;
   isUploading: boolean;
@@ -60,11 +19,10 @@ export function useAvatarUpload(): UseAvatarUploadReturn {
   const queryClient             = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
 
-  const upload = async (file: File): Promise<string> => {
+  const upload = async (blob: Blob): Promise<string> => {
     if (!user) throw new Error('Not authenticated');
     setIsUploading(true);
     try {
-      const blob = await resizeToBlob(file);
       const path = `${user.id}/avatar.jpg`;
 
       const { error: uploadErr } = await supabase.storage
