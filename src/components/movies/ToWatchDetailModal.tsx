@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Film } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 import { Modal }               from '@/components/ui/Modal';
 import { Button }              from '@/components/ui/Button';
 import { ConfirmModal }        from '@/components/ui/ConfirmModal';
 import { MarkAsWatchedModal }  from '@/components/movies/MarkAsWatchedModal';
-import { upgradePosterUrl }    from '@/lib/tmdb';
+import { upgradePosterUrl, getMovieDetails } from '@/lib/tmdb';
+import { tmdbMovieKey }        from '@/hooks/usePrefetchMovieDetails';
+import { STALE_TMDB }          from '@/providers/QueryProvider';
 import type { Movie }          from '@/types';
 import type { MarkAsWatchedParams } from '@/components/movies/MarkAsWatchedModal';
 
@@ -30,6 +33,17 @@ export interface ToWatchDetailModalProps {
 const BLUR_DATA_URL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function fmtRuntime(minutes: number | null | undefined): string | null {
+  if (!minutes || minutes <= 0) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function ToWatchDetailModal({
@@ -48,6 +62,16 @@ export function ToWatchDetailModal({
   // Keep a snapshot of the movie while closing animation plays
   const [snapshot, setSnapshot] = useState<Movie | null>(null);
   const displayed = movie ?? snapshot;
+
+  // TMDB extra details (runtime, tagline) — served from prefetch cache
+  const { data: tmdbDetails } = useQuery({
+    queryKey: tmdbMovieKey(displayed?.tmdb_id ?? 0),
+    queryFn:  () => getMovieDetails(displayed!.tmdb_id),
+    enabled:  !!displayed?.tmdb_id,
+    staleTime: STALE_TMDB,
+  });
+
+  const runtime = fmtRuntime(tmdbDetails?.runtime);
 
   const handleMarkWatchedConfirm = async (params: MarkAsWatchedParams) => {
     await onMoveToWatched(params);
@@ -102,11 +126,19 @@ export function ToWatchDetailModal({
             {/* Info */}
             <div className="flex flex-col gap-4 px-5 pt-4">
 
-              {/* Year + genres */}
+              {/* Year · runtime + genres */}
               <div className="flex flex-col gap-2">
-                {displayed.year && (
-                  <span className="text-sm text-[#6B7280]">{displayed.year}</span>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {displayed.year && (
+                    <span className="text-sm text-[#6B7280]">{displayed.year}</span>
+                  )}
+                  {runtime && (
+                    <>
+                      <span className="text-[#3F3F46]" aria-hidden="true">·</span>
+                      <span className="text-sm text-[#6B7280]">{runtime}</span>
+                    </>
+                  )}
+                </div>
                 {displayed.genres?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {displayed.genres.map((g) => (
@@ -120,6 +152,13 @@ export function ToWatchDetailModal({
                   </div>
                 )}
               </div>
+
+              {/* Tagline */}
+              {tmdbDetails?.tagline && (
+                <p className="text-xs text-[#6B7280] italic leading-relaxed">
+                  &ldquo;{tmdbDetails.tagline}&rdquo;
+                </p>
+              )}
 
               {/* Synopsis */}
               {displayed.synopsis && (

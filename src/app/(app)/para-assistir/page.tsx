@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { staggerContainer } from '@/theme/animations';
-import { Bookmark, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Bookmark, Dices, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -100,6 +100,12 @@ export default function ParaAssistirPage() {
     }
   };
 
+  const handleRandomPick = () => {
+    if (filteredMovies.length === 0) return;
+    const idx = Math.floor(Math.random() * filteredMovies.length);
+    setSelectedMovie(filteredMovies[idx]);
+  };
+
   const handleMoveToWatched = async (params: MarkAsWatchedParams) => {
     if (!selectedMovie) return;
     try {
@@ -167,6 +173,19 @@ export default function ParaAssistirPage() {
                 />
               )}
             </div>
+
+            {/* Random pick */}
+            {!isLoading && filteredMovies.length > 0 && (
+              <button
+                type="button"
+                onClick={handleRandomPick}
+                aria-label="Escolher filme aleatório"
+                title="Escolher aleatório"
+                className="p-2 rounded-xl text-[#6B7280] hover:text-[#9CA3AF] transition-colors duration-150"
+              >
+                <Dices size={18} aria-hidden="true" />
+              </button>
+            )}
 
             {/* Count */}
             {!isLoading && (
