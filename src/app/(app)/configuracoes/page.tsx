@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Check, LogOut, Moon, Pencil, Sun } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { Camera, Check, LogOut, Moon, Pencil, Sun, Trash2 } from 'lucide-react';
 import { m } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
-import { useTheme }       from '@/providers/ThemeProvider';
-import { useAuth }        from '@/providers/AuthProvider';
-import { supabase }       from '@/lib/supabase/client';
-import { Modal }          from '@/components/ui/Modal';
-import { ConfirmModal }   from '@/components/ui/ConfirmModal';
+import { useTheme }          from '@/providers/ThemeProvider';
+import { useAuth }           from '@/providers/AuthProvider';
+import { useAvatarUpload }   from '@/hooks/useAvatarUpload';
+import { useToast }          from '@/components/ui/Toast';
+import { supabase }          from '@/lib/supabase/client';
+import { Modal }             from '@/components/ui/Modal';
+import { ConfirmModal }      from '@/components/ui/ConfirmModal';
+import { UserAvatar }        from '@/components/ui/UserAvatar';
 import type { PrimaryColor } from '@/types';
 
 const EditNameModal = dynamic(
@@ -107,6 +110,14 @@ function Row({
 export default function ConfiguracoesPage() {
   const { theme, primaryColor, toggleTheme, setPrimaryColor } = useTheme();
   const { profile, user, signOut } = useAuth();
+  const { upload, remove, isUploading } = useAvatarUpload();
+  const { showToast } = useToast();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Local avatar URL with bounce animation key
+  const [avatarUrl,      setAvatarUrl]      = useState(profile?.avatar_url ?? null);
+  const [bounceKey,      setBounceKey]      = useState(0);
+  const [confirmRemove,  setConfirmRemove]  = useState(false);
 
   const [notifEnabled,   setNotifEnabled]   = useState(profile?.notifications_enabled ?? true);
   const [showHowTo,      setShowHowTo]      = useState(false);
@@ -114,6 +125,11 @@ export default function ConfiguracoesPage() {
   const [editNameOpen,   setEditNameOpen]   = useState(false);
   const [confirmLogout,  setConfirmLogout]  = useState(false);
   const [signingOut,     setSigningOut]     = useState(false);
+
+  // Keep local avatar in sync with profile (e.g. reloaded from DB)
+  useEffect(() => {
+    setAvatarUrl(profile?.avatar_url ?? null);
+  }, [profile?.avatar_url]);
 
   // Sync with profile once loaded
   useEffect(() => {
@@ -127,6 +143,31 @@ export default function ConfiguracoesPage() {
     setConfirmLogout(false);
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset file input so the same file can be selected again
+    e.target.value = '';
+    try {
+      const url = await upload(file);
+      setAvatarUrl(url);
+      setBounceKey((k) => k + 1);
+    } catch {
+      showToast('Não foi possível salvar a foto.', 'error');
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      await remove();
+      setAvatarUrl(null);
+    } catch {
+      showToast('Erro ao remover foto.', 'error');
+    } finally {
+      setConfirmRemove(false);
+    }
+  };
+
   const handleToggleNotifications = async () => {
     const next = !notifEnabled;
     setNotifEnabled(next);
@@ -137,6 +178,66 @@ export default function ConfiguracoesPage() {
   return (
     <main className="min-h-screen bg-[#0A0A0A]">
       <div className="flex flex-col gap-6 px-4 pt-4 pb-12">
+
+        {/* ── Avatar ───────────────────────────────────────────────────────── */}
+        <div className="flex flex-col items-center gap-3 pt-2 pb-1">
+          {/* Circle with camera overlay */}
+          <div className="relative">
+            <m.div
+              key={bounceKey}
+              animate={bounceKey > 0 ? { scale: [1, 1.06, 1] } : {}}
+              transition={{ duration: 0.35, ease: 'easeInOut' }}
+            >
+              <UserAvatar
+                displayName={profile?.display_name}
+                avatarUrl={avatarUrl}
+                size="lg"
+              />
+            </m.div>
+
+            {/* Upload button */}
+            <button
+              type="button"
+              onClick={() => !isUploading && fileInputRef.current?.click()}
+              aria-label="Alterar foto de perfil"
+              className={[
+                'absolute -bottom-1 -right-1',
+                'w-7 h-7 rounded-full',
+                'bg-[#2A2A2A] border-2 border-[#0A0A0A]',
+                'flex items-center justify-center',
+                'transition-opacity duration-150',
+                isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#3A3A3A]',
+              ].join(' ')}
+            >
+              {isUploading ? (
+                <span className="w-3 h-3 border border-[#6B7280] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera size={13} className="text-[#9CA3AF]" aria-hidden="true" />
+              )}
+            </button>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+          </div>
+
+          {/* Remove photo link */}
+          {avatarUrl && (
+            <button
+              type="button"
+              onClick={() => setConfirmRemove(true)}
+              className="flex items-center gap-1.5 text-xs text-[#6B7280] hover:text-[#EF4444] transition-colors duration-150"
+            >
+              <Trash2 size={11} aria-hidden="true" />
+              Remover foto
+            </button>
+          )}
+        </div>
 
         {/* ── Conta ────────────────────────────────────────────────────────── */}
         <Section title="Conta">
@@ -246,6 +347,17 @@ export default function ConfiguracoesPage() {
       <EditNameModal
         visible={editNameOpen}
         onClose={() => setEditNameOpen(false)}
+      />
+
+      {/* ── Confirm remove avatar ─────────────────────────────────────────── */}
+      <ConfirmModal
+        visible={confirmRemove}
+        onClose={() => setConfirmRemove(false)}
+        onConfirm={handleRemoveAvatar}
+        title="Remover foto?"
+        message="Sua foto de perfil será removida e voltará às iniciais."
+        confirmLabel="Remover"
+        loading={isUploading}
       />
 
       {/* ── Confirm logout modal ─────────────────────────────────────────── */}

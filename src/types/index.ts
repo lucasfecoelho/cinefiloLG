@@ -17,6 +17,7 @@ export interface Profile {
   theme: ThemeMode;
   notifications_enabled: boolean;
   push_token: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }

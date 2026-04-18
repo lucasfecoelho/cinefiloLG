@@ -25,7 +25,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   /** Optimistically updates profile in context and persists to Supabase */
   updateProfile: (
-    updates: Partial<Pick<Profile, 'display_name'>>,
+    updates: Partial<Pick<Profile, 'display_name' | 'avatar_url'>>,
   ) => Promise<{ error: Error | null }>;
 }
 
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const updateProfile = useCallback(
-    async (updates: Partial<Pick<Profile, 'display_name'>>) => {
+    async (updates: Partial<Pick<Profile, 'display_name' | 'avatar_url'>>) => {
       if (!user) return { error: new Error('Not authenticated') };
       // Optimistic update
       setProfile((prev) => (prev ? { ...prev, ...updates } : prev));

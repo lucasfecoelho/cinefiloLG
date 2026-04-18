@@ -9,6 +9,7 @@ import { Modal }           from '@/components/ui/Modal';
 import { Button }          from '@/components/ui/Button';
 import { ConfirmModal }    from '@/components/ui/ConfirmModal';
 import { StarRating }      from '@/components/ui/StarRating';
+import { UserAvatar }      from '@/components/ui/UserAvatar';
 import { upgradePosterUrl, getMovieDetails } from '@/lib/tmdb';
 import { tmdbMovieKey }    from '@/hooks/usePrefetchMovieDetails';
 import { STALE_TMDB }      from '@/providers/QueryProvider';
@@ -77,9 +78,16 @@ function RatingRow({
 }: RatingRowProps) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">
-        {profile.display_name}
-      </span>
+      <div className="flex items-center gap-2">
+        <UserAvatar
+          displayName={profile.display_name}
+          avatarUrl={profile.avatar_url}
+          size="sm"
+        />
+        <span className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">
+          {profile.display_name}
+        </span>
+      </div>
 
       <StarRating
         rating={editScore}

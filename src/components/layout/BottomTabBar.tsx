@@ -6,6 +6,7 @@ import { m } from 'framer-motion';
 
 import { useNotificationCount } from '@/hooks/useNotificationCount';
 import { useAuth }               from '@/providers/AuthProvider';
+import { UserAvatar }            from '@/components/ui/UserAvatar';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,26 +34,6 @@ const TABS: TabDef[] = [
   { path: '/configuracoes', label: 'Perfil',        isAvatar: true },
 ];
 
-// ─── Mini avatar ─────────────────────────────────────────────────────────────
-
-function TabAvatar({ initial, isActive }: { initial: string; isActive: boolean }) {
-  return (
-    <span
-      className={[
-        'w-7 h-7 rounded-full',
-        'bg-(--color-primary)',
-        'flex items-center justify-center shrink-0',
-        'transition-all duration-200',
-        isActive
-          ? 'ring-2 ring-(--color-primary) ring-offset-[3px] ring-offset-[#141414]'
-          : 'opacity-55',
-      ].join(' ')}
-      aria-hidden="true"
-    >
-      <span className="text-[11px] font-bold text-white leading-none">{initial}</span>
-    </span>
-  );
-}
 
 // ─── BottomTabBar ─────────────────────────────────────────────────────────────
 
@@ -61,8 +42,6 @@ export function BottomTabBar() {
   const pathname    = usePathname();
   const unreadCount = useNotificationCount();
   const { profile } = useAuth();
-
-  const initial = profile?.display_name?.[0]?.toUpperCase() ?? '?';
 
   return (
     <nav
@@ -97,7 +76,13 @@ export function BottomTabBar() {
               {/* Icon / badge area */}
               <span className="relative mt-1">
                 {isAvatar ? (
-                  <TabAvatar initial={initial} isActive={isActive} />
+                  <UserAvatar
+                    displayName={profile?.display_name}
+                    avatarUrl={profile?.avatar_url}
+                    size="sm"
+                    active={isActive}
+                    className={isActive ? '' : 'opacity-55'}
+                  />
                 ) : Icon ? (
                   <Icon
                     size={22}
